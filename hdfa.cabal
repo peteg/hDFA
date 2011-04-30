@@ -1,0 +1,28 @@
+Name: hDFA
+Version: 0.0.1
+Cabal-version: >= 1.2
+Build-type: Simple
+Copyright: 2010, 2011 Peter Gammie, some parts (C) 1998-2009 Gerwin Klein <lsf@jflex.de>
+Maintainer: peteg42@gmail.com
+Author: Peter Gammie
+License: GPL
+License-file: COPYRIGHT
+Synopsis: A simple library for representing and minimising DFAs.
+Description:
+
+ hDFA provides a simple API for representing and minimizing
+ deterministic finite automata (DFAs) using an explicit representation
+ (a transition matrix). It includes a port of the Hopcroft
+ minimization algorithm in JFlex to C.
+
+extra-source-files: bitsets.c bitsets.h dfa.c dfa.h test.c
+
+-- FIXME
+Library
+  build-depends: base >= 2 && < 5
+  extensions: ForeignFunctionInterface
+  exposed-modules: Data.DFA
+  includes: dfa.h
+  c-sources: bitsets.c dfa.c
+  cc-options: -Wall -std=c99
+  ghc-options: -Wall

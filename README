@@ -1,0 +1,11 @@
+= hDFA: Simple deterministic finite automata =
+
+hDFA provides a simple API for representing and minimizing
+deterministic finite automata (DFAs) using an explicit representation
+(a transition matrix). It includes a port of the Hopcroft minimization
+algorithm in JFlex to C.
+
+== Changes ==
+
+0.0.1
+  Initial release
