@@ -18,6 +18,10 @@ Description:
 
 extra-source-files: Makefile bitsets.c bitsets.h dfa.c dfa.h test.c
 
+source-repository head
+  type:     git
+  location: git://github.com/peteg/hDFA.git
+
 -- FIXME
 Library
   build-depends: base >= 2 && < 5
