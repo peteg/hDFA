@@ -8,6 +8,7 @@ Author: Peter Gammie
 License: GPL
 License-file: COPYRIGHT
 Synopsis: A simple library for representing and minimising DFAs.
+Category: Data
 Description:
 
  hDFA provides a simple API for representing and minimizing
