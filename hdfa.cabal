@@ -15,7 +15,7 @@ Description:
  (a transition matrix). It includes a port of the Hopcroft
  minimization algorithm in JFlex to C.
 
-extra-source-files: bitsets.c bitsets.h dfa.c dfa.h test.c
+extra-source-files: Makefile bitsets.c bitsets.h dfa.c dfa.h test.c
 
 -- FIXME
 Library
