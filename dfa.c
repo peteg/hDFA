@@ -264,7 +264,6 @@ DFA_satBit(struct DFA *dfa, state_t state)
 /* **************************************** */
 /* Render the automaton in DOT format. */
 
-/* FIXME maybe take an edge-label rendering function. */
 void
 DFA_toDot(struct DFA *dfa, void (label_fn)(label_t, char[LABEL_LEN]), FILE *file)
 {
