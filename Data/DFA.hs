@@ -75,6 +75,9 @@ type State = CUInt
 cToNum :: (Num i, Integral e) => e -> i
 cToNum  = fromIntegral . toInteger
 
+initialize :: Bool -> IO DFA
+initialize = dfa_init . fromBool
+
 -- | Add an initial transition for the given @Label@ to the given
 -- @State@ to @DFA@.
 addInitialTransition :: DFA -> (Label, State) -> IO ()
@@ -145,7 +148,7 @@ foldTransitions dfa f b0 =
 -------------------------------------------------------------------
 
 -- | Create a new @DFA@.
-foreign import ccall unsafe "dfa.h DFA_init" initialize :: IO DFA
+foreign import ccall unsafe "dfa.h DFA_init" dfa_init :: Int -> IO DFA
 
 -- | Garbage-collect a @DFA@.
 foreign import ccall unsafe "dfa.h DFA_free" finished :: DFA -> IO ()

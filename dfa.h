@@ -44,7 +44,7 @@ struct DFA;
 typedef unsigned int state_t;
 typedef unsigned int label_t;
 
-struct DFA *DFA_init(void);
+struct DFA *DFA_init(bool);
 void DFA_free(struct DFA *dfa);
 
 void DFA_addInitialTransition(struct DFA *dfa, label_t label, state_t end);

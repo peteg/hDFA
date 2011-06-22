@@ -64,6 +64,9 @@ states. (The initial partition is based on a single bit.)
 /* **************************************** */
 
 struct DFA {
+  /* Debugging output. */
+  bool debug;
+
   /* Initial transitions: can be labelled. */
   int *initial;
 
@@ -115,12 +118,13 @@ DFA_dumpState(struct DFA *dfa)
 }
 
 struct DFA *
-DFA_init(void)
+DFA_init(bool debug)
 {
   struct DFA *dfa = (struct DFA *)malloc(sizeof(struct DFA));
   unsigned int numStates = DEFAULT_NUM_STATES;
   unsigned int numSymbols = DEFAULT_ALPHABET_SIZE;
 
+  dfa->debug = debug;
   dfa->initial = (int *)malloc(numSymbols * sizeof(int));
   dfa->table = (int *)malloc(numStates * numSymbols * sizeof(int));
   dfa->numStates = 0;
@@ -169,10 +173,12 @@ DFA_ensureCapacity(struct DFA *dfa, state_t newMaxNumStates, unsigned int newMax
     numSymbols *= 2;
   }
 
-  printf("ensureCapacity, resizing from %d -> %d states (%d req), %d -> %d syms (%d req)\nOld table:\n",
-         oldMaxNumStates, maxNumStates, newMaxNumStates,
-         oldMaxNumSymbols, numSymbols, newMaxNumSymbols);
-  DFA_dumpState(dfa);
+  if(dfa->debug) {
+      printf("ensureCapacity, resizing from %d -> %d states (%d req), %d -> %d syms (%d req)\nOld table:\n",
+             oldMaxNumStates, maxNumStates, newMaxNumStates,
+             oldMaxNumSymbols, numSymbols, newMaxNumSymbols);
+      DFA_dumpState(dfa);
+    }
 
   dfa->initial = (int *)realloc(dfa->initial, numSymbols * sizeof(int));
   dfa->table = (int *)realloc(dfa->table, numSymbols * maxNumStates * sizeof(int));
@@ -195,8 +201,10 @@ DFA_ensureCapacity(struct DFA *dfa, state_t newMaxNumStates, unsigned int newMax
     }
   }
 
-  printf("ensureCapacity, after:\n");
-  DFA_dumpState(dfa);
+  if(dfa->debug) {
+    printf("ensureCapacity, after:\n");
+    DFA_dumpState(dfa);
+  }
 }
 
 void
@@ -267,7 +275,9 @@ DFA_satBit(struct DFA *dfa, state_t state)
 void
 DFA_toDot(struct DFA *dfa, void (label_fn)(label_t, char[LABEL_LEN]), FILE *file)
 {
-  printf("DFA_toDot\n");
+  if(dfa->debug) {
+    printf("DFA_toDot\n");
+  }
 
   fprintf(file, "digraph DFA {\n");
   fprintf(file, "\trankdir = LR\n\tnode [shape=\"circle\"]\n");
@@ -438,10 +448,14 @@ DFA_printL(struct DFA *dfa, unsigned int *l_f, unsigned int *l_b, unsigned int a
 void
 DFA_minimize(struct DFA *dfa)
 {
-  printf("%d states before minimization\n", dfa->numStates);
+  if(dfa->debug) {
+    printf("%d states before minimization\n", dfa->numStates);
+  }
 
   if(dfa->numStates == 0) {
-    printf("no states, already done!\n");
+    if(dfa->debug) {
+      printf("no states, already done!\n");
+    }
     return;
   }
 
@@ -543,11 +557,15 @@ DFA_minimize(struct DFA *dfa)
     }
   } // of initialize inv_delta
 
-  DFA_printInvDelta(dfa, inv_delta, inv_delta_set);
+  if(dfa->debug) {
+    DFA_printInvDelta(dfa, inv_delta, inv_delta_set);
+  }
 
   // initialize blocks
 
-  printf("\n>>> initialising blocks\n");
+  if(dfa->debug) {
+    printf("\n>>> initialising blocks\n");
+  }
 
   // make b0 = {0}  where 0 = the additional error state
   b_forward[b0]  = 0;
@@ -557,10 +575,15 @@ DFA_minimize(struct DFA *dfa)
   block[0]  = b0;
   block[b0] = 1;
 
-  DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
+  if(dfa->debug) {
+    DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
+  }
 
   for(int s = 1; s < n; s++) {
-    printf(" Checking state [%d]\n", s - 1);
+    if(dfa->debug) {
+      printf(" Checking state [%d]\n", s - 1);
+    }
+
     // search the blocks if it fits in somewhere
     // (fit in = same pushback behavior, same finalness, same lookahead behavior, same action)
     unsigned int b = b0 + 1; // no state can be equivalent to the error state
@@ -569,7 +592,10 @@ DFA_minimize(struct DFA *dfa)
     while(!found && b <= lastBlock) {
       // get some state out of the current block
       int t = b_forward[b];
-      printf("  picking state [%d]\n", t - 1);
+
+      if(dfa->debug) {
+        printf("  picking state [%d]\n", t - 1);
+      }
 
       // check if s could be equivalent with t
       found = (BitSet_isSet(dfa->satBit, s - 1))
@@ -577,7 +603,10 @@ DFA_minimize(struct DFA *dfa)
         : ! (BitSet_isSet(dfa->satBit, t - 1));
 
       if(found) { // found -> add state s to block b
-        printf("Found! Adding to block %d\n", b - b0);
+        if(dfa->debug) {
+          printf("Found! Adding to block %d\n", b - b0);
+        }
+
         // update block information
         block[s] = b;
         block[b]++;
@@ -594,7 +623,9 @@ DFA_minimize(struct DFA *dfa)
     }
 
     if(!found) { // fits in nowhere -> create new block
-      printf("Not found, lastBlock = %d\n", lastBlock);
+      if(dfa->debug) {
+        printf("Not found, lastBlock = %d\n", lastBlock);
+      }
 
       // update block information
       block[s] = b;
@@ -610,7 +641,9 @@ DFA_minimize(struct DFA *dfa)
     }
   } // of initialize blocks
 
-  DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
+  if(dfa->debug) {
+    DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
+  }
 
   // initialize worklist L
 
@@ -661,12 +694,16 @@ DFA_minimize(struct DFA *dfa)
   // start of "real" algorithm
 
   unsigned int step = 1;
-  printf("\n>> start of real alg: max_steps = %d\n", n * numInput);
+  if(dfa->debug) {
+    printf("\n>> start of real alg: max_steps = %d\n", n * numInput);
+  }
 
   // while L not empty
   while(l_forward[anchorL] != anchorL) {
-    printf("\nstep: %d\n", step++);
-    DFA_printL(dfa, l_forward, l_backward, anchorL);
+    if(dfa->debug) {
+      printf("\nstep: %d\n", step++);
+      DFA_printL(dfa, l_forward, l_backward, anchorL);
+    }
 
     // pick and delete (B_j, a) in L:
 
@@ -680,10 +717,11 @@ DFA_minimize(struct DFA *dfa)
     unsigned int B_j = b0 + B_j_a / numInput;
     unsigned int a   = B_j_a % numInput;
 
-    DFA_printL(dfa, l_forward, l_backward, anchorL);
-
-    printf("picked (%d, %d)\n", B_j - n, a);
-    DFA_printL(dfa, l_forward, l_backward, anchorL);
+    if(dfa->debug) {
+      DFA_printL(dfa, l_forward, l_backward, anchorL);
+      printf("picked (%d, %d)\n", B_j - n, a);
+      // DFA_printL(dfa, l_forward, l_backward, anchorL);
+    }
 
     // determine splittings of all blocks wrt (B_j, a)
     // i.e. D = inv_delta(B_j,a)
@@ -691,13 +729,20 @@ DFA_minimize(struct DFA *dfa)
     unsigned int s = b_forward[B_j];
 
     while(s != B_j) {
-      printf("splitting wrt. state %d\n", s - 1);
+      if(dfa->debug) {
+        printf("splitting wrt. state %d\n", s - 1);
+      }
+
       int t = ARRAY_2D_PRIM(inv_delta, numInput, s, a);
 /*         int t = inv_delta[s][a]; */
-      printf("inv_delta chunk %d\n", t);
+      if(dfa->debug) {
+        printf("inv_delta chunk %d\n", t);
+      }
 
       while(inv_delta_set[t] != NO_TARGET) {
-        printf("D += state %d\n", inv_delta_set[t] - 1);
+        if(dfa->debug) {
+          printf("D += state %d\n", inv_delta_set[t] - 1);
+        }
         D[numD++] = inv_delta_set[t++];
       }
       s = b_forward[s];
@@ -706,7 +751,9 @@ DFA_minimize(struct DFA *dfa)
     // clear the twin list
     numSplit = 0;
 
-    printf("splitting blocks according to D\n");
+    if(dfa->debug) {
+      printf("splitting blocks according to D\n");
+    }
 
     // clear SD and twins (only those B_i that occur in D)
     for(unsigned int indexD = 0; indexD < numD; indexD++) { // for each s in D
@@ -741,16 +788,26 @@ DFA_minimize(struct DFA *dfa)
       s = D[indexD];
       B_i = block[s];
 
-      printf("checking if block %d must be split because of state %d\n", B_i - b0 , s - 1);
+      if(dfa->debug) {
+        printf("checking if block %d must be split because of state %d\n", B_i - b0 , s - 1);
+      }
 
       if(SD[B_i] != block[B_i]) {
-        printf("state %d must be moved\n", s - 1);
         unsigned int B_k = twin[B_i];
+
+        if(dfa->debug) {
+          printf("state %d must be moved\n", s - 1);
+        }
+
         if(B_k == 0) {
           // no twin for B_i yet -> generate new block B_k, make it B_i's twin
           B_k = ++lastBlock;
-          printf("creating block %d\n", B_k - n);
-          DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock - 1);
+
+          if(dfa->debug) {
+            printf("creating block %d\n", B_k - n);
+            DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock - 1);
+          }
+
           b_forward[B_k] = B_k;
           b_backward[B_k] = B_k;
 
@@ -777,14 +834,18 @@ DFA_minimize(struct DFA *dfa)
         block[B_i]--;
 
         SD[B_i]--;  // there is now one state less in B_i that goes with a into B_j
-        DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
-        printf("finished move\n");
+
+        if(dfa->debug) {
+          DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
+          printf("finished move\n");
+        }
       }
     } // of block splitting
 
-    DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
-
-    printf("updating L\n");
+    if(dfa->debug) {
+      DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
+      printf("updating L\n");
+    }
 
     // update L
     for(unsigned int indexTwin = 0; indexTwin < numSplit; indexTwin++) {
@@ -824,8 +885,10 @@ DFA_minimize(struct DFA *dfa)
     }
   }
 
-  printf("\n>> Result\n");
-  DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
+  if(dfa->debug) {
+    printf("\n>> Result\n");
+    DFA_printBlocks(dfa, block, b_forward, b_backward, lastBlock);
+  }
 
   // Clean up
   free(inv_list_last);
@@ -869,7 +932,9 @@ DFA_minimize(struct DFA *dfa)
       trans[s] = min_s;
       if(s != min_s) {
         BitSet_set(kill, s);
-        printf("Killing state %d\n", s);
+        if(dfa->debug) {
+          printf("Killing state %d\n", s);
+        }
       }
     }
   }
@@ -935,5 +1000,7 @@ DFA_minimize(struct DFA *dfa)
   free(b_forward);
   free(block);
 
-  printf("%d states in minimized DFA\n", dfa->numStates);
+  if(dfa->debug) {
+    printf("%d states in minimized DFA\n", dfa->numStates);
+  }
 }
