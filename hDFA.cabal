@@ -22,12 +22,15 @@ source-repository head
   type:     git
   location: git://github.com/peteg/hDFA.git
 
--- FIXME
 Library
-  build-depends: base >= 2 && < 5
+  build-depends: base >= 2 && < 5, containers, directory, process
   extensions: ForeignFunctionInterface
-  exposed-modules: Data.DFA
+  exposed-modules:
+    Data.DFA
+    Data.DFA.DOT
+    Data.DFA.KISS2
+    Data.DFA.STAMINA
   includes: dfa.h
   c-sources: bitsets.c dfa.c
-  cc-options: -Wall -std=c99
+  cc-options: -Wall -std=c99 -pedantic
   ghc-options: -Wall

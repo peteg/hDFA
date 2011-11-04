@@ -67,6 +67,12 @@ void DFA_toDot(struct DFA *dfa, void (label_fn)(label_t, char[LABEL_LEN]), FILE 
 /* FIXME returns (-1)/errno if anything goes wrong. */
 int DFA_writeDotToFile(struct DFA *dfa, void (label_fn)(label_t, char[LABEL_LEN]), char *file);
 
+void DFA_toKISS2(struct DFA *dfa, FILE *file);
+/* FIXME returns (-1)/errno if anything goes wrong. */
+int DFA_writeKISS2ToFile(struct DFA *dfa, char *file);
+
 void DFA_minimize(struct DFA *dfa);
+
+bool DFA_debugging(struct DFA *dfa);
 
 #endif /* _DFA_H_ */

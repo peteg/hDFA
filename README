@@ -5,7 +5,15 @@ deterministic finite automata (DFAs) using an explicit representation
 (a transition matrix). It includes a port of the Hopcroft minimization
 algorithm in JFlex to C.
 
+Building:
+
+runghc Setup configure --user -p --enable-library-profiling --ghc-option=-auto-all --ghc-option=-caf-all
+runghc Setup build
+runghc Setup install
+
 == Changes ==
 
 0.0.1
   Initial release
+0.0.2
+  Add KISS2 and STAMINA support.

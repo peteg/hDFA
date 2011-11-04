@@ -50,13 +50,15 @@ module Data.DFA
          -- * Inspection
        , numStates
        , numSymbols
-       , writeDotToFile
+       , satBit
+       , debugging
        ) where
 
 -------------------------------------------------------------------
 -- Dependencies.
 -------------------------------------------------------------------
 
+import Prelude
 import Control.Monad	( foldM )
 
 import Foreign
@@ -88,22 +90,16 @@ addInitialTransition dfa (l, t) = addInitialTransition' dfa l t
 addTransition :: DFA -> (State, Label, State) -> IO ()
 addTransition dfa (s, l, t) = addTransition' dfa s l t
 
--- | Write @DFA@ to a file with the given @FilePath@, using the given
--- labelling function.
-writeDotToFile :: DFA -> FilePath -> (Label -> String) -> IO ()
-writeDotToFile dfa fname labelFn =
-  do labelFunPtr <- mkLabelFunPtr labelFn'
-     throwErrnoPathIfMinus1_ "writeDotToFile" fname $
-       withCString fname (writeDotToFile' dfa labelFunPtr)
-  where
-   labelFn' l buf =
-     pokeArray0 (castCharToCChar '\0') buf (map castCharToCChar (take 79 (labelFn l))) -- FIXME constant, char casts
-
-foreign import ccall "wrapper" mkLabelFunPtr :: (Label -> Ptr CChar -> IO ()) -> IO (FunPtr (Label -> Ptr CChar -> IO ()))
+debugging :: DFA -> IO Bool
+debugging = fmap toBool . debugging'
 
 -------------------------------------------------------------------
 
 -- Traversal combinators.
+
+-- | Is the satBit set on state @s@?
+satBit :: DFA -> State -> IO Bool
+satBit dfa s = fmap toBool (satBit' dfa s)
 
 -- We'd hope to do this more efficiently in C land, maybe.
 
@@ -121,7 +117,7 @@ foldInitialTransitions dfa f b0 =
       do s <- initialTransition dfa l
          if s >= 0
            then do let s' = cToNum s
-                   sb <- fmap toBool (satBit dfa s')
+                   sb <- satBit dfa s'
                    f (l, s', sb) b
            else return b
 
@@ -141,7 +137,7 @@ foldTransitions dfa f b0 =
          if t >= 0
            then do let s' = cToNum s
                        t' = cToNum t
-                   tb <- fmap toBool (satBit dfa t')
+                   tb <- satBit dfa t'
                    f (s', l, t', tb) b
            else return b
 
@@ -164,7 +160,7 @@ foreign import ccall unsafe "dfa.h DFA_initialTransition"
 foreign import ccall unsafe "dfa.h DFA_transition"
         transition :: DFA -> State -> Label -> IO CInt
 foreign import ccall unsafe "dfa.h DFA_satBit"
-        satBit :: DFA -> State -> IO CInt -- FIXME actually CBool
+        satBit' :: DFA -> State -> IO CInt -- FIXME actually CBool
 
 foreign import ccall unsafe "dfa.h DFA_addInitialTransition"
          addInitialTransition' :: DFA -> Label -> State -> IO ()
@@ -181,6 +177,6 @@ foreign import ccall unsafe "dfa.h DFA_setSatBit"
 foreign import ccall unsafe "dfa.h DFA_minimize"
          minimize :: DFA -> IO ()
 
--- Note this can call back into Haskell land.
-foreign import ccall safe "dfa.h DFA_writeDotToFile"
-         writeDotToFile' :: DFA -> FunPtr (Label -> Ptr CChar -> IO ()) -> CString -> IO CInt
+-- | Is the debugging flag set?
+foreign import ccall unsafe "dfa.h DFA_debugging"
+         debugging' :: DFA -> IO CInt -- FIXME actually CBool

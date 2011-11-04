@@ -19,7 +19,7 @@ test_graph(char *filename)
     return;
   }
 
-  dfa = DFA_init();
+  dfa = DFA_init(true);
 
   state_t s, t;
   label_t l;
@@ -42,9 +42,9 @@ test_graph(char *filename)
 
   // FIXME also slurp in the final graph.
 
-  DFA_writeDot(dfa, stdout);
+  DFA_writeDotToFile(dfa, stdout);
   DFA_minimize(dfa);
-  DFA_writeDot(dfa, stdout);
+  DFA_writeDotToFile(dfa, stdout);
 
   DFA_free(dfa);
   fclose(f);
