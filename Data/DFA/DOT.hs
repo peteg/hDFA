@@ -1,6 +1,6 @@
 {- graphviz DOT format operations.
- - Copyright   :  (C)opyright 2011 peteg42 at gmail dot com
- - License     :  GPL (see COPYING for details)
+ - Copyright   :  (C)opyright 2011-2012 peteg42 at gmail dot com
+ - License     :  BSD (see LICENCE for details)
  -}
 module Data.DFA.DOT
        (
@@ -26,13 +26,15 @@ import Data.DFA ( DFA, Label )
 writeToFile :: DFA -> FilePath -> (Label -> String) -> IO ()
 writeToFile dfa fname labelFn =
   do labelFunPtr <- mkLabelFunPtr labelFn'
-     throwErrnoPathIfMinus1_ "writeDotToFile" fname $
+     throwErrnoPathIfMinus1_ "DOT.writeToFile" fname $
        withCString fname (writeDotToFile' dfa labelFunPtr)
   where
-   labelFn' l buf =
-     pokeArray0 (castCharToCChar '\0') buf (map castCharToCChar (take 79 (labelFn l))) -- FIXME constant, char casts
+    f c = castCharToCChar (if c == '\n' then ' ' else c)
+    labelFn' l buf =
+      pokeArray0 (castCharToCChar '\0') buf (map f (take 200 (labelFn l))) -- FIXME constant, char casts
 
-foreign import ccall "wrapper" mkLabelFunPtr :: (Label -> Ptr CChar -> IO ()) -> IO (FunPtr (Label -> Ptr CChar -> IO ()))
+foreign import ccall "wrapper"
+         mkLabelFunPtr :: (Label -> Ptr CChar -> IO ()) -> IO (FunPtr (Label -> Ptr CChar -> IO ()))
 
 -- Note this can call back into Haskell land.
 foreign import ccall safe "dfa.h DFA_writeDotToFile"

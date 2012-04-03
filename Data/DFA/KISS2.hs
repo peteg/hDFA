@@ -1,6 +1,6 @@
 {- Berkeley KISS2 format operations.
- - Copyright   :  (C)opyright 2011 peteg42 at gmail dot com
- - License     :  GPL (see COPYING for details)
+ - Copyright   :  (C)opyright 2011-2012 peteg42 at gmail dot com
+ - License     :  BSD (see LICENCE for details)
  -}
 module Data.DFA.KISS2
        (
@@ -20,7 +20,7 @@ import Foreign.C
 -- import Data.Map ( Map )
 import qualified Data.Map as Map
 
-import Data.DFA ( DFA )
+import Data.DFA ( DFA, State )
 import qualified Data.DFA as DFA
 
 -------------------------------------------------------------------
@@ -28,14 +28,18 @@ import qualified Data.DFA as DFA
 cToNum :: (Num i, Integral e) => e -> i
 cToNum  = fromIntegral . toInteger
 
+-- | The initial state.
+q0 :: State
+q0 = 0
+
 -- | Read a @DFA@ from KISS2 format.
 --
 -- A very sloppy and incomplete parser. Assumes there is a single
--- output, and the inputs are one-hot.
+-- output.
 read :: Bool -> String -> IO DFA
 read debug ls =
   do let s = foldl' lex_states (Map.empty, initial_state) (lines ls)
-     dfa <- DFA.initialize debug
+     dfa <- DFA.initialize debug q0
      _ <- mapM_ (lex_trans dfa s) (lines ls)
      return dfa
   where
@@ -45,7 +49,8 @@ read debug ls =
     state_name st out = st ++ "_" ++ out
 
     -- This needs to be the inverse of what writeKISS2ToFile does.
-    lex_inputs = cToNum . length . takeWhile (== '0')
+    -- lex_inputs = cToNum . length . takeWhile (== '0') -- one-hot
+    lex_inputs is = sum [ 2 ^ x | (i, x) <- zip is [(0::Int) .. ], i == '1' ]
 
     lex_out out = out == "1"
 
@@ -62,13 +67,14 @@ read debug ls =
 
     -- Ignore "from" states: assume the graph is connected.
     -- It may be that the initial state has no incoming edges.
+    -- (+1) to account for the initial state
     lex_states_trans s = lex_states_trans2 s . words
     lex_states_trans2 (sm, is) [_inputs, _from, to, out] =
       let t = state_name to out
-          !sm' = case t `Map.lookup` sm of
-            Nothing -> Map.insert t (cToNum (Map.size sm)) sm
+          sm' = case t `Map.lookup` sm of
+            Nothing -> Map.insert t (cToNum (Map.size sm + 1)) sm
             Just {} -> sm
-       in (sm', is)
+       in sm' `seq` is `seq` (sm', is)
     lex_states_trans2 _s l = error $ "readKISS2: failed to lex: '" ++ unwords l ++ "'"
 
     -- Add the transitions to the DFA.
@@ -78,21 +84,18 @@ read debug ls =
       _ -> return ()
 
     lex_trans1 dfa s = lex_trans2 dfa s . words
-    lex_trans2 dfa (sm, is) l@[inputs, from, to, out] =
+    lex_trans2 dfa (sm, is) [inputs, from, to, out] =
       do let sym = lex_inputs inputs
              Just t = state_name to out `Map.lookup` sm
-         -- Treat all incoming transitions to the reset state as
+         -- Treat all outgoing transitions from the reset state as
          -- initial transitions.
-         when (to == is) $ DFA.addInitialTransition dfa (sym, t)
-         when (lex_out out) $ DFA.setSatBit dfa t
+         when (from == is) $ DFA.addTransition dfa (q0, sym, t)
+         when (lex_out out) $ DFA.setFinal dfa t
          -- Add transitions from both "from" states.
-         -- FIXME in general "out" is pretty arbitrary, not just boolean.
+         -- FIXME in general "out" is not just boolean.
          let add_trans o =
                case state_name from o `Map.lookup` sm of
-                 Nothing ->
-                   -- The initial state has no incoming edges.
-                   do when debug $ putStrLn $ "Omitting initial state, transition: " ++ show l
-                      DFA.addInitialTransition dfa (sym, t)
+                 Nothing -> return ()
                  Just f -> DFA.addTransition dfa (f, sym, t)
          add_trans "0"
          add_trans "1"
@@ -101,7 +104,7 @@ read debug ls =
 -- | Write @DFA@ to a file with the given @FilePath@ in Berkeley KISS2 format.
 writeToFile :: DFA -> FilePath -> IO ()
 writeToFile dfa fname =
-  throwErrnoPathIfMinus1_ "writeDotToFile" fname $
+  throwErrnoPathIfMinus1_ "KISS2.writetoFile" fname $
     withCString fname (writeKISS2ToFile' dfa)
 
 foreign import ccall unsafe "dfa.h DFA_writeKISS2ToFile"

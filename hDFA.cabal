@@ -1,12 +1,12 @@
 Name: hDFA
-Version: 0.0.2
-Cabal-version: >= 1.2
+Version: 0.0.3
+Cabal-version: >= 1.6
 Build-type: Simple
-Copyright: 2010, 2011 Peter Gammie, some parts (C) 1998-2009 Gerwin Klein <lsf@jflex.de>
+Copyright: 2010-2012 Peter Gammie
 Maintainer: peteg42@gmail.com
 Author: Peter Gammie
-License: GPL
-License-file: COPYRIGHT
+License: BSD3
+License-file: LICENCE
 Synopsis: A simple library for representing and minimising DFAs.
 Category: Data
 Description:
@@ -16,7 +16,7 @@ Description:
  (a transition matrix). It includes a port of the Hopcroft
  minimization algorithm in JFlex to C.
 
-extra-source-files: Makefile bitsets.c bitsets.h dfa.c dfa.h test.c
+extra-source-files: Makefile bitsets.c bitsets.h dfa.c dfa.h dfa-driver.c qsort.h
 
 source-repository head
   type:     git
@@ -31,6 +31,6 @@ Library
     Data.DFA.KISS2
     Data.DFA.STAMINA
   includes: dfa.h
-  c-sources: bitsets.c dfa.c
-  cc-options: -Wall -std=c99 -pedantic
+  c-sources: bitsets.c dfa.c qsort.c
+  cc-options: -Wall -std=c99 -pedantic -ggdb
   ghc-options: -Wall

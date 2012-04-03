@@ -1,6 +1,6 @@
 {- Berkeley/Colorado STAMINA interface.
- - Copyright   :  (C)opyright 2011 peteg42 at gmail dot com
- - License     :  GPL (see COPYING for details)
+ - Copyright   :  (C)opyright 2011-2012 peteg42 at gmail dot com
+ - License     :  BSD (see LICENCE for details)
 
 STAMINA minimizes under-specified finite state automata.
 
@@ -19,7 +19,7 @@ module Data.DFA.STAMINA
 -------------------------------------------------------------------
 
 import Prelude
-import Control.Monad ( unless )
+import Control.Monad ( unless, when )
 
 import System.Process ( readProcess )
 import System.Directory ( removeFile )
@@ -35,13 +35,14 @@ import qualified Data.DFA.KISS2 as KISS2
 --
 -- The first argument is the path to STMAINA.
 --
--- Creates a new DFA. Inherits debugging setting from the argument
--- DFA.
+-- FIXME Creates a new DFA (it really shouldn't). Inherits debugging
+-- setting from the argument DFA.
 minimize :: FilePath -> DFA -> IO DFA
 minimize stamina dfa =
-  do (tmpfile, _) <- openTempFile "/tmp" "hDFA_stamina.kiss2"
+  do debugging <- DFA.debugging dfa
+     (tmpfile, _) <- openTempFile "/tmp" "hDFA_stamina.kiss2"
+     when debugging $ putStrLn $ "STAMINA.minimize: tmpfile: " ++ tmpfile
      KISS2.writeToFile dfa tmpfile
      kiss2 <- readProcess stamina [tmpfile] ""
-     debugging <- DFA.debugging dfa
-     unless debugging $ removeFile tmpfile
+     -- unless debugging $ removeFile tmpfile
      KISS2.read debugging kiss2
