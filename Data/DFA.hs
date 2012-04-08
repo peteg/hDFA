@@ -81,6 +81,12 @@ dumpToFile :: DFA -> FilePath -> IO ()
 dumpToFile dfa fname = throwErrnoPathIfMinus1_ "Data.DFA.dumpToFile" fname $
     withCString fname (dumpToFile' dfa)
 
+-- | Reduce the @DFA@ using Hopcroft's algorithm.
+minimize :: DFA
+         -> Bool -- ^ Preserve states that cannot reach final states.
+         -> IO ()
+minimize dfa = minimize' dfa . fromBool
+
 -------------------------------------------------------------------
 
 -- Traversal combinators.
@@ -149,9 +155,8 @@ foreign import ccall unsafe "dfa.h DFA_addTransition"
 foreign import ccall unsafe "dfa.h DFA_setFinal"
          setFinal :: DFA -> State -> IO ()
 
--- | Reduce the @DFA@ using Hopcroft's algorithm.
 foreign import ccall unsafe "dfa.h DFA_minimize"
-         minimize :: DFA -> IO ()
+         minimize' :: DFA -> CInt {- FIXME Bool -} -> IO ()
 
 -- | Is the debugging flag set?
 foreign import ccall unsafe "dfa.h DFA_debugging"

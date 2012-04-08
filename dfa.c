@@ -9,8 +9,8 @@ Adjacency-list representation.
 We have no use for actions, just a distinction between two types of
 states. (The initial partition is based on a single bit.)
 
-This representation does not ensure that the FA is deterministic. We
-assume it is in a few places, hopefully signposted.
+This representation does not ensure that the finite automaton is
+deterministic. We assume it is in a few places, hopefully signposted.
 
  */
 
@@ -593,9 +593,15 @@ rem_unreachable(struct DFA *dfa, min_alg_state_t tw, unsigned int T[], unsigned 
   tw->rr = 0;
 }
 
-/* Main program */
+/* Minimize a DFA.
+ *
+ * The algorithm discards states that are not reachable from the
+ * initial state or backwards reachable from a final state. Sometimes
+ * we want to retain the latter; setting @preserve_unreachable_states@
+ * does so.
+ */
 void
-DFA_minimize(struct DFA * dfa)
+DFA_minimize(struct DFA *dfa, bool preserve_unreachable_states)
 {
   min_alg_state_t tw;
   unsigned int ff = 0;
@@ -604,6 +610,27 @@ DFA_minimize(struct DFA * dfa)
     printf("DFA_minimize()\n");
     DFA_dump(dfa, stdout);
   }
+
+  /* Following a suggestion by Antti Valmari, we preserve states that
+   * cannot reach a final state by adding self-transitions with a new
+   * label to all final states, and then making all states final. */
+  unsigned int final_label = 0;
+
+  if(preserve_unreachable_states) {
+    for(unsigned int i = 0; i < dfa->mm; i++) {
+      final_label = MAX(final_label, dfa->L[i] + 1);
+    }
+    for(unsigned int q = 0; q < BitSet_size(dfa->isFinal); q++) {
+      if(BitSet_isSet(dfa->isFinal, q)) {
+        DFA_addTransition(dfa, q, final_label, q);
+      }
+    }
+    for(unsigned int q = 0; q < BitSet_size(dfa->isFinal); q++) {
+      BitSet_set(dfa->isFinal, q);
+    }
+  }
+
+  /* Antti Valmari's original algorithm. */
 
   tw = (min_alg_state_t)malloc(sizeof(struct min_alg_state));
   tw->w = 0;
@@ -632,11 +659,7 @@ DFA_minimize(struct DFA * dfa)
   }
 
   ff = tw->rr;
-  /* FIXME It is not sound to remove the states that do not lead to
-     final states in my application; it is correct in the standard
-     case where we're only interested in whether the automaton accepts
-     a string. */
-  /* rem_unreachable(dfa, tw, dfa->H, dfa->T); */
+  rem_unreachable(dfa, tw, dfa->H, dfa->T);
 
   /* Make initial partition */
   malloc_unsigned_int(&tw->W, dfa->mm);
@@ -690,23 +713,29 @@ DFA_minimize(struct DFA * dfa)
 
   /* Update the DFA / print out the result */
 
-  /* Count the numbers of transitions
-     and final states in the result */
-  unsigned int mo = 0, fo = 0;
+  /* Count the numbers of transitions in the result. */
+  unsigned int mo = 0;
+
   for(unsigned int t = 0; t < dfa->mm; t++) {
-    if(B->L[dfa->T[t]] == B->F[B->S[dfa->T[t]]]) {
+    if(dfa->L[t] != final_label && B->L[dfa->T[t]] == B->F[B->S[dfa->T[t]]]) {
       mo++;
     }
   }
 
-  for(unsigned int b = 0; b < B->z; b++) {
-    if(B->F[b] < ff) {
-      fo++;
+  /* Print the result FIXME take care of preserve_unreachable_states */
+/*
+  Count the number of final states in the result.
+  unsigned int fo = 0;
+  if(preserve_unreachable_states) {
+    FIXME
+  } else {
+    for(unsigned int b = 0; b < B->z; b++) {
+      if(B->F[b] < ff) {
+        fo++;
+      }
     }
   }
 
-  /* Print the result */
-/*
   printf("DFA_minimize() print result.\n");
   printf("%u %u %u %u\n", B->z, mo, B->S[dfa->q0], fo);
   for(unsigned int t = 0; t < dfa->mm; t++) {
@@ -732,24 +761,31 @@ DFA_minimize(struct DFA * dfa)
   malloc_unsigned_int(&T1, mo);
   malloc_unsigned_int(&L1, mo);
   malloc_unsigned_int(&H1, mo);
-  isFinal1 = BitSet_init(B->z);
+  isFinal1 = BitSet_init(B->z); /* FIXME perhaps too many if preserve_unreachable_states */
 
   unsigned int i = 0;
   for(unsigned int t = 0; t < dfa->mm; t++) {
     if(B->L[dfa->T[t]] == B->F[B->S[dfa->T[t]]]) {
-      if(i >= mo) {
-        printf(">>> DFA MINIMISE TOO MANY STATES\n");
-      }
+      unsigned int
+        tail = B->S[dfa->T[t]],
+        label = dfa->L[t],
+        head = B->S[dfa->H[t]];
 
-      T1[i] = B->S[dfa->T[t]];
-      L1[i] = dfa->L[t];
-      H1[i] = B->S[dfa->H[t]];
-      i++;
+      if(preserve_unreachable_states && label == final_label) {
+        BitSet_set(isFinal1, tail);
+      } else {
+        T1[i] = tail;
+        L1[i] = label;
+        H1[i] = head;
+        i++;
+      }
     }
   }
-  for(unsigned int b = 0; b < B->z; b++) {
-    if(B->F[b] < ff) {
-      BitSet_set(isFinal1, b);
+  if(!preserve_unreachable_states) {
+    for(unsigned int b = 0; b < B->z; b++) {
+      if(B->F[b] < ff) {
+        BitSet_set(isFinal1, b);
+      }
     }
   }
 

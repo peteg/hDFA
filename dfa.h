@@ -51,7 +51,7 @@ void DFA_toKISS2(struct DFA *dfa, FILE *file);
 /* FIXME returns (-1)/errno if anything goes wrong. */
 int DFA_writeKISS2ToFile(struct DFA *dfa, char *file);
 
-void DFA_minimize(struct DFA *dfa);
+void DFA_minimize(struct DFA *dfa, bool preserve_unreachable_states);
 
 bool DFA_debugging(struct DFA *dfa);
 
