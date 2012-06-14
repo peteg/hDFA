@@ -157,7 +157,7 @@ loop:   SWAPINIT(a, es);
         r = min(pd - pc, pn - pd - es);
         vecswap(pb, pn - r, r);
         if ((r = pb - pa) > es)
-                qsort_r(a, r / es, es, thunk, cmp);
+                dfa_qsort_r(a, r / es, es, thunk, cmp);
         if ((r = pd - pc) > es) {
                 /* Iterate rather than recurse to save stack space */
                 a = pn - r;
