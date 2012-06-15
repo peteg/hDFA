@@ -1,7 +1,6 @@
-{- Berkeley KISS2 format operations.
- - Copyright   :  (C)opyright 2011-2012 peteg42 at gmail dot com
- - License     :  BSD (see LICENCE for details)
- -}
+-- | Berkeley KISS2 format operations.
+--
+-- We use this to interface with STAMINA.
 module Data.DFA.KISS2
        (
          read
@@ -32,7 +31,7 @@ cToNum  = fromIntegral . toInteger
 q0 :: State
 q0 = 0
 
--- | Read a @DFA@ from KISS2 format.
+-- | Read a @DFA@ from Berkeley KISS2 format.
 --
 -- A very sloppy and incomplete parser. Assumes there is a single
 -- output.

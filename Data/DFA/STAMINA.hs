@@ -1,14 +1,11 @@
-{- Berkeley/Colorado STAMINA interface.
- - Copyright   :  (C)opyright 2011-2012 peteg42 at gmail dot com
- - License     :  BSD (see LICENCE for details)
-
-STAMINA minimizes under-specified finite state automata.
-
-It is part of Berkeley's SIS distribution:
-
-http://embedded.eecs.berkeley.edu/pubs/downloads/sis/index.htm
-
- -}
+-- | An interface to the Berkeley/Colorado STAMINA tool.
+--
+-- STAMINA minimizes the number of states in an under-specified finite
+-- state automata. This problem is NP-complete in general (unlike the
+-- problem solved by Hopcroft's algorithm and its modern
+-- descendants.).
+--
+-- It is part of Berkeley's SIS distribution: <http://embedded.eecs.berkeley.edu/pubs/downloads/sis/index.htm>
 module Data.DFA.STAMINA
        (
          minimize
@@ -33,10 +30,10 @@ import qualified Data.DFA.KISS2 as KISS2
 
 -- | Minimize an automaton using STAMINA.
 --
--- The first argument is the path to STMAINA.
+-- The first argument is the path to STAMINA.
 --
--- FIXME Creates a new DFA (it really shouldn't). Inherits debugging
--- setting from the argument DFA.
+-- FIXME This creates a new DFA (it really shouldn't). It inherits the
+-- debugging setting from the argument @DFA@.
 minimize :: FilePath -> DFA -> IO DFA
 minimize stamina dfa =
   do debugging <- DFA.debugging dfa

@@ -1,7 +1,5 @@
 -- |
 -- Representation of DFAs and some simple algorithms on them.
---
--- (C) Peter Gammie 2010-2012, peteg42 at gmail dot com
 module Data.DFA
        (
          DFA
@@ -51,11 +49,6 @@ type Label = CUInt
 -- | States are represented using C @unsigned int@s.
 type State = CUInt
 
-{- FIXME
-cToNum :: (Num i, Integral e) => e -> i
-cToNum  = fromIntegral . toInteger
--}
-
 -- | Create a new @DFA@.
 initialize :: Bool -- ^ Debugging?
            -> State -- ^ Initial state
@@ -71,17 +64,18 @@ addTransition dfa (t, l, h) = addTransition' dfa t l h
 debugging :: DFA -> IO Bool
 debugging = fmap toBool . debugging'
 
--- | Load a @DFA@ from a file in FIXME format.
+-- | Load a @DFA@ from a file in a standard format. (See the accompanying examples and @dfa.c@ for details.)
 loadFromFile :: FilePath -> IO DFA
 loadFromFile fname = fmap DFA $ throwErrnoPathIfNull "Data.DFA.loadFromFile" fname $
     withCString fname loadFromFile'
 
--- | Dump a @DFA@ to a file in FIXME format.
+-- | Dump a @DFA@ to a file in a standard format. (See the accompanying examples and @dfa.c@ for details.)
 dumpToFile :: DFA -> FilePath -> IO ()
 dumpToFile dfa fname = throwErrnoPathIfMinus1_ "Data.DFA.dumpToFile" fname $
     withCString fname (dumpToFile' dfa)
 
--- | Reduce the @DFA@ using Hopcroft's algorithm.
+-- | Reduce the @DFA@ using Antti Valmari's algorithm. The result
+-- should be the same as for the standard algorithm due to Hopcroft.
 minimize :: DFA
          -> Bool -- ^ Preserve states that cannot reach final states.
          -> IO ()
@@ -123,7 +117,7 @@ foreign import ccall unsafe "dfa.h DFA_getInitialState"
 
 -- foreign import ccall unsafe "dfa.h DFA_setInitialState" setInitialState :: DFA -> State -> IO ()
 
--- | Garbage-collect a @DFA@.
+-- | Garbage collect a @DFA@.
 foreign import ccall unsafe "dfa.h DFA_free" finished :: DFA -> IO ()
 
 -- | Returns the number of states that are actually present in @DFA@.
@@ -162,10 +156,8 @@ foreign import ccall unsafe "dfa.h DFA_minimize"
 foreign import ccall unsafe "dfa.h DFA_debugging"
          debugging' :: DFA -> IO CInt -- FIXME actually CBool
 
--- | Dump the DFA to a file in FIXME format.
 foreign import ccall unsafe "dfa.h DFA_dumpToFile"
          dumpToFile' :: DFA -> CString -> IO CInt
 
--- | Load a DFA from a file in FIXME format.
 foreign import ccall unsafe "dfa.h DFA_loadFromFile"
          loadFromFile' :: CString -> IO (Ptr DFA)

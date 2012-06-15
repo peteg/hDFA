@@ -1,7 +1,7 @@
-{- graphviz DOT format operations.
- - Copyright   :  (C)opyright 2011-2012 peteg42 at gmail dot com
- - License     :  BSD (see LICENCE for details)
- -}
+-- | graphviz DOT format operations.
+--
+-- Support here is rudimentary. It is probably better to build it on
+-- top of one of the existing libraries on Hackage.
 module Data.DFA.DOT
        (
          writeToFile
